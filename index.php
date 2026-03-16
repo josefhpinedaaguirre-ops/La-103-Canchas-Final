@@ -4,7 +4,7 @@ session_start();
 
 // 2. EL ESCUDO: Si no existe el ID en la sesión, significa que no se ha logueado.
 if (!isset($_SESSION['id'])) {
-    header("Location: reservar.html");
+    header("Location: registro.html");
     exit();
 }
 
