@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Canchas La 103</title>
+    <style>
+        body {
+            margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80'); 
+            background-size: cover; background-position: center;
+            height: 100vh; display: flex; justify-content: center; align-items: center;
+        }
+        .login-card {
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
+            padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2);
+            width: 350px; text-align: center; color: white; box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+        .login-card h2 { color: #2ecc71; text-transform: uppercase; letter-spacing: 2px; }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-size: 14px; color: #bbb; }
+        .input-group input {
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            background: rgba(255,255,255,0.2); color: white; outline: none;
+            box-sizing: border-box; transition: 0.3s;
+        }
+        .input-group input:focus { background: rgba(255,255,255,0.3); border: 1px solid #2ecc71; }
+        .btn-entrar {
+            width: 100%; padding: 15px; background: #2ecc71; border: none;
+            border-radius: 8px; color: white; font-weight: bold; cursor: pointer;
+            text-transform: uppercase; transition: 0.4s; margin-top: 10px;
+        }
+        .btn-entrar:hover { background: #27ae60; transform: translateY(-3px); box-shadow: 0 5px 15px rgba(46,204,113,0.4); }
+        .footer-links { margin-top: 20px; font-size: 13px; }
+        .footer-links a { color: #2ecc71; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>La 103 ⚽</h2>
+        <p>¡Listo para el partido!</p>
+        <form action="validar_login.php" method="POST">
+            
+            <div class="input-group">
+                <label>Correo Electrónico</label>
+                <input type="email" name="correo" placeholder="ejemplo@gol.com" required>
+            </div>
+            <div class="input-group">
+                <label>Contraseña</label>
+                <input type="password" name="contrasena" placeholder="********" required>
+            </div>
+            <button type="submit" class="btn-entrar">Pisar la cancha</button>
+        
+        </form>
+        <div class="footer-links">
+            <p>¿No tienes cuenta? <a href="nuevo_registro.html">Regístrate aquí</a></p>
+        </div>
+    </div>
+</body>
+</html>

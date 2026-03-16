@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro La 103 | Nueva Incorporación</title>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .form-container { background: #222; padding: 30px; border-radius: 15px; border-top: 5px solid #2ecc71; width: 300px; }
+        h2 { text-align: center; color: #2ecc71; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #2ecc71; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 5px; }
+        button:hover { background: #27ae60; }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>Ficha de Jugador</h2>
+        <form action="procesar_nuevo_usuario.php" method="POST">
+            <input type="text" name="nombre" placeholder="Nombre Completo" required>
+            <input type="email" name="correo" placeholder="Correo Electrónico" required>
+            <input type="password" name="contrasena" placeholder="Crea una Contraseña" required>
+            <input type="text" name="telefono" placeholder="Teléfono" required>
+            <button type="submit">Firmar Contrato (Registrar)</button>
+        </form>
+        <p style="font-size: 12px; text-align: center;"><a href="registro.html" style="color: #2ecc71;">¿Ya tienes cuenta? Entra aquí</a></p>
+    </div>
+</body>
+</html>
