@@ -1,1 +1,1 @@
-web: php -S 0.0.0.0:$PORT registro.html
+web: vendor/bin/heroku-php-nginx .
