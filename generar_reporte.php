@@ -1,21 +1,23 @@
 <?php
 ob_start();
+// Asegúrate de que el archivo fpdf.php esté en la misma carpeta en tu GitHub
 require('fpdf.php'); 
 include("conexion.php");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $tipo = $_POST['tipo_reporte'];
+    $tipo = $_POST['tipo_reporte'] ?? 'diario';
     
-    // Capturamos las fechas del rango personalizado si existen
-    $fecha_inicio = isset($_POST['fecha_inicio']) ? $_POST['fecha_inicio'] : date('Y-m-d');
-    $fecha_fin = isset($_POST['fecha_fin']) ? $_POST['fecha_fin'] : date('Y-m-d');
+    // Capturamos las fechas del rango personalizado
+    $fecha_inicio = !empty($_POST['fecha_inicio']) ? mysqli_real_escape_string($conexion, $_POST['fecha_inicio']) : date('Y-m-d');
+    $fecha_fin = !empty($_POST['fecha_fin']) ? mysqli_real_escape_string($conexion, $_POST['fecha_fin']) : date('Y-m-d');
 
     class PDF extends FPDF {
         function Header() {
+            // Fondo oscuro para el encabezado
             $this->SetFillColor(20, 20, 20);
             $this->Rect(0, 0, 210, 35, 'F');
             $this->SetFont('Arial', 'B', 18);
-            $this->SetTextColor(46, 204, 113); 
+            $this->SetTextColor(46, 204, 113); // Verde La 103
             $this->Cell(0, 15, iconv('UTF-8', 'windows-1252', 'Canchas La 103 - Informe Financiero'), 0, 1, 'C');
             $this->SetFont('Arial', 'I', 10);
             $this->SetTextColor(255, 255, 255);
@@ -36,38 +38,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdf->AddPage();
     $pdf->SetFont('Arial', '', 11);
 
-    // LÓGICA DE CONSULTAS CON FILTRO Y ORDEN ASCENDENTE
+    // --- CONSULTAS CON TABLAS EN MINÚSCULA PARA RAILWAY ---
     if ($tipo == 'diario') {
         $titulo = 'REPORTE DE VENTAS DEL DÍA: ' . date('d/m/Y');
         $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva 
-                FROM Reservas r 
-                JOIN Usuarios u ON r.id_usuario = u.id 
-                JOIN Canchas c ON r.id_cancha = c.id
+                FROM reservas r 
+                JOIN usuarios u ON r.id_usuario = u.id 
+                JOIN canchas c ON r.id_cancha = c.id
                 WHERE r.fecha_reserva = CURDATE()
-                ORDER BY r.hora_inicio ASC"; // Orden cronológico
+                ORDER BY r.hora_inicio ASC";
     } elseif ($tipo == 'personalizado') {
         $titulo = 'REPORTE DEL ' . date("d/m/Y", strtotime($fecha_inicio)) . ' AL ' . date("d/m/Y", strtotime($fecha_fin));
         $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva 
-                FROM Reservas r 
-                JOIN Usuarios u ON r.id_usuario = u.id 
-                JOIN Canchas c ON r.id_cancha = c.id
+                FROM reservas r 
+                JOIN usuarios u ON r.id_usuario = u.id 
+                JOIN canchas c ON r.id_cancha = c.id
                 WHERE r.fecha_reserva BETWEEN '$fecha_inicio' AND '$fecha_fin'
-                ORDER BY r.fecha_reserva ASC, r.hora_inicio ASC"; // Orden cronológico por rango
+                ORDER BY r.fecha_reserva ASC, r.hora_inicio ASC";
     } else {
         $titulo = 'REPORTE DETALLADO - ÚLTIMOS 7 DÍAS';
         $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva 
-                FROM Reservas r 
-                JOIN Usuarios u ON r.id_usuario = u.id 
-                JOIN Canchas c ON r.id_cancha = c.id
+                FROM reservas r 
+                JOIN usuarios u ON r.id_usuario = u.id 
+                JOIN canchas c ON r.id_cancha = c.id
                 WHERE r.fecha_reserva >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-                ORDER BY r.fecha_reserva ASC, r.hora_inicio ASC"; // Orden cronológico
+                ORDER BY r.fecha_reserva ASC, r.hora_inicio ASC";
     }
 
     $pdf->SetFont('Arial', 'B', 11);
     $pdf->Cell(0, 10, iconv('UTF-8', 'windows-1252', $titulo), 0, 1);
     $pdf->Ln(5);
 
-    // Encabezados
+    // Encabezados de tabla
     $pdf->SetFillColor(46, 204, 113);
     $pdf->SetTextColor(255);
     $pdf->SetFont('Arial', 'B', 9);
@@ -83,8 +85,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdf->SetFont('Arial', '', 9);
     
     $res = mysqli_query($conexion, $sql);
-    $total_recaudado = 0;
+    if (!$res) {
+        die("Error en reporte: " . mysqli_error($conexion));
+    }
 
+    $total_recaudado = 0;
     while($row = mysqli_fetch_assoc($res)) {
         $pdf->Cell(12, 10, $row['id'], 1, 0, 'C');
         $fecha_formateada = date("d/m/Y", strtotime($row['fecha_reserva']));
@@ -103,7 +108,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdf->Cell(157, 12, 'MONTO TOTAL RECAUDADO:', 1, 0, 'R', true);
     $pdf->Cell(33, 12, '$' . number_format($total_recaudado), 1, 1, 'R', true);
 
-    ob_end_clean();
+    // Limpiamos cualquier salida previa para evitar errores de PDF corrupto
+    if (ob_get_length()) ob_end_clean();
     $pdf->Output('I', 'Reporte_La103_Ventas.pdf');
+} else {
+    header("Location: admin_reservas.php");
 }
 ?>
