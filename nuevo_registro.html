@@ -1,28 +1,98 @@
+<?php
+session_start();
+include("conexion.php");
+
+// Si no hay sesión, lo mandamos al login (registro.html)
+if (!isset($_SESSION['id'])) {
+    header("Location: registro.html");
+    exit();
+}
+
+$nombre = $_SESSION['nombre'];
+$rol = $_SESSION['rol'];
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Registro La 103 | Nueva Incorporación</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La 103 | Panel Principal</title>
     <style>
-        body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .form-container { background: #222; padding: 30px; border-radius: 15px; border-top: 5px solid #2ecc71; width: 300px; }
-        h2 { text-align: center; color: #2ecc71; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #2ecc71; border: none; color: white; font-weight: bold; cursor: pointer; border-radius: 5px; }
-        button:hover { background: #27ae60; }
+        body { 
+            background: #0f0f0f; 
+            color: white; 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh;
+            background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=2000'); /* Imagen de fútbol de fondo */
+            background-size: cover;
+        }
+        .container { 
+            background: rgba(26, 26, 26, 0.95); 
+            padding: 40px; 
+            border-radius: 20px; 
+            text-align: center; 
+            border-top: 5px solid #2ecc71;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+            width: 350px;
+        }
+        h1 { color: #2ecc71; margin-bottom: 10px; text-transform: uppercase; font-size: 24px; }
+        p { color: #aaa; margin-bottom: 30px; }
+        
+        .menu-grid { display: flex; flex-direction: column; gap: 15px; }
+        
+        .btn { 
+            padding: 15px; 
+            border-radius: 10px; 
+            text-decoration: none; 
+            font-weight: bold; 
+            transition: 0.3s; 
+            display: block;
+            text-transform: uppercase;
+            font-size: 14px;
+        }
+        
+        .btn-reserva { background: #2ecc71; color: black; }
+        .btn-reserva:hover { background: #27ae60; transform: scale(1.02); }
+        
+        .btn-ver { background: #34495e; color: white; border: 1px solid #444; }
+        .btn-ver:hover { background: #2c3e50; transform: scale(1.02); }
+        
+        .btn-admin { background: #e74c3c; color: white; }
+        .btn-admin:hover { background: #c0392b; transform: scale(1.02); }
+
+        .btn-logout { color: #666; font-size: 12px; margin-top: 20px; text-decoration: none; }
+        .btn-logout:hover { color: #e74c3c; }
+        
+        .rol-badge { 
+            background: #2ecc71; color: black; padding: 2px 10px; 
+            border-radius: 20px; font-size: 10px; font-weight: bold;
+            vertical-align: middle; margin-left: 5px;
+        }
     </style>
 </head>
 <body>
-    <div class="form-container">
-        <h2>Ficha de Jugador</h2>
-        <form action="procesar_nuevo_usuario.php" method="POST">
-            <input type="text" name="nombre" placeholder="Nombre Completo" required>
-            <input type="email" name="correo" placeholder="Correo Electrónico" required>
-            <input type="password" name="contrasena" placeholder="Crea una Contraseña" required>
-            <input type="text" name="telefono" placeholder="Teléfono" required>
-            <button type="submit">Firmar Contrato (Registrar)</button>
-        </form>
-        <p style="font-size: 12px; text-align: center;"><a href="registro.html" style="color: #2ecc71;">¿Ya tienes cuenta? Entra aquí</a></p>
+
+    <div class="container">
+        <h1>La 103 <small class="rol-badge"><?php echo strtoupper($rol); ?></small></h1>
+        <p>Bienvenido, <strong><?php echo htmlspecialchars($nombre); ?></strong></p>
+
+        <div class="menu-grid">
+            <a href="reservar.php" class="btn btn-reserva">⚽ Agendar Nuevo Partido</a>
+            
+            <a href="ver_reserva.php" class="btn btn-ver">📅 Ver Mis Reservas</a>
+
+            <?php if ($rol === 'admin'): ?>
+                <a href="admin_panel.php" class="btn btn-admin">🛠️ Panel Administrativo</a>
+            <?php endif; ?>
+            
+            <a href="logout.php" class="btn-logout">Cerrar Sesión</a>
+        </div>
     </div>
+
 </body>
 </html>
