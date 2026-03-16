@@ -4,7 +4,8 @@ include("conexion.php");
 
 // 1. Verificamos que el usuario esté logueado
 if (!isset($_SESSION['id'])) {
-    header("Location: reservar.html");
+    // Si no hay sesión, mandamos al registro o login
+    header("Location: registro.html"); 
     exit();
 }
 
@@ -13,8 +14,7 @@ $rol_usuario = $_SESSION['rol'];
 
 /**
  * 2. LÓGICA DE FILTRADO:
- * Si es admin, no ponemos el WHERE para que vea todo.
- * Si es cliente, filtramos por su ID de sesión.
+ * Cambiamos 'Reservas' por 'reservas', 'Usuarios' por 'usuarios' y 'Canchas' por 'canchas'
  */
 if ($rol_usuario === 'admin') {
     $where_clause = ""; // Sin filtro
@@ -22,15 +22,20 @@ if ($rol_usuario === 'admin') {
     $where_clause = "WHERE r.id_usuario = '$id_usuario_logueado'"; // Solo lo suyo
 }
 
-// 3. Consulta con JOIN y el filtro aplicado
+// 3. Consulta con JOIN (Tablas en minúscula para Railway)
 $sql = "SELECT r.id, u.nombre AS cliente, c.nombre_cancha, r.fecha_reserva, r.hora_inicio, r.hora_fin, r.precio_total_cancha, r.estado_reserva 
-        FROM Reservas r
-        JOIN Usuarios u ON r.id_usuario = u.id
-        JOIN Canchas c ON r.id_cancha = c.id
+        FROM reservas r
+        JOIN usuarios u ON r.id_usuario = u.id
+        JOIN canchas c ON r.id_cancha = c.id
         $where_clause
         ORDER BY r.fecha_reserva DESC, r.hora_inicio ASC";
 
+// Ejecutamos la consulta con un pequeño seguro para evitar el error 500
 $resultado = mysqli_query($conexion, $sql);
+
+if (!$resultado) {
+    die("Error en la consulta: " . mysqli_error($conexion));
+}
 ?>
 
 <!DOCTYPE html>
@@ -90,7 +95,7 @@ $resultado = mysqli_query($conexion, $sql);
                     <td><?php echo substr($row['hora_inicio'], 0, 5) . " - " . substr($row['hora_fin'], 0, 5); ?></td>
                     <td style="font-weight: bold;">$<?php echo number_format($row['precio_total_cancha'], 0, ',', '.'); ?></td>
                     <td>
-                        <span class="badge <?php echo $row['estado_reserva']; ?>">
+                        <span class="badge <?php echo strtolower($row['estado_reserva']); ?>">
                             <?php echo strtoupper($row['estado_reserva']); ?>
                         </span>
                     </td>
@@ -98,7 +103,7 @@ $resultado = mysqli_query($conexion, $sql);
                 <?php 
                     } 
                 } else {
-                    echo "<tr><td colspan='6' class='vacio'>No tienes reservas registradas todavía. ⚽</td></tr>";
+                    echo "<tr><td colspan='6' class='vacio'>No hay reservas registradas. ⚽</td></tr>";
                 }
                 ?>
             </tbody>
