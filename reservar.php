@@ -2,18 +2,31 @@
 session_start();
 include("conexion.php");
 
+// 1. Verificamos que el usuario esté logueado
 if (!isset($_SESSION['id'])) {
     header("Location: registro.html");
     exit();
 }
 
-// 1. Consultamos las canchas
-$sql_canchas = "SELECT id, nombre_cancha FROM Canchas WHERE estado = 'disponible'";
+/**
+ * LÓGICA DE TABLAS (Minúsculas para Railway/Linux)
+ */
+
+// 1. Consultamos las canchas (Canchas -> canchas)
+$sql_canchas = "SELECT id, nombre_cancha FROM canchas WHERE estado = 'disponible'";
 $res_canchas = mysqli_query($conexion, $sql_canchas);
 
-// 2. Consultamos los implementos (Usando tus nombres de columna reales)
-$sql_implementos = "SELECT id, nombre_objeto, cantidad_total FROM Implementos WHERE cantidad_total > 0";
+if (!$res_canchas) {
+    die("Error consultando canchas: " . mysqli_error($conexion));
+}
+
+// 2. Consultamos los implementos (Implementos -> implementos)
+$sql_implementos = "SELECT id, nombre_objeto, cantidad_total FROM implementos WHERE cantidad_total > 0";
 $res_implementos = mysqli_query($conexion, $sql_implementos);
+
+if (!$res_implementos) {
+    die("Error consultando implementos: " . mysqli_error($conexion));
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -29,7 +42,6 @@ $res_implementos = mysqli_query($conexion, $sql_implementos);
         select, input { width: 100%; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #252525; color: white; outline: none; box-sizing: border-box; transition: 0.3s; }
         select:focus, input:focus { border-color: #2ecc71; }
         
-        /* Estilos para los implementos */
         .seccion-implementos { background: #222; padding: 15px; border-radius: 10px; margin: 20px 0; border: 1px dashed #444; }
         .impl-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .impl-info { font-size: 13px; }
@@ -42,7 +54,7 @@ $res_implementos = mysqli_query($conexion, $sql_implementos);
 </head>
 <body>
     <div class="reserva-box">
-        <p style="text-align:center; color:#2ecc71;">Bienvenido, <strong><?php echo $_SESSION['nombre']; ?></strong> ⚽</p>
+        <p style="text-align:center; color:#2ecc71;">Bienvenido, <strong><?php echo htmlspecialchars($_SESSION['nombre']); ?></strong> ⚽</p>
         <h2>Reserva tu Turno</h2>
 
         <div class="tarifa-info">
