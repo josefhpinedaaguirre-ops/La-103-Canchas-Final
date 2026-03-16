@@ -1,23 +1,31 @@
 <?php
+// 1. ACTIVAR REPORTES DE ERROR (Esto nos dirá por qué sale en blanco)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 ob_start();
-// Asegúrate de que el archivo fpdf.php esté en la misma carpeta en tu GitHub
+
+// 2. VERIFICAR SI EL ARCHIVO FPDF EXISTE
+if (!file_exists('fpdf.php')) {
+    die("Error: No se encuentra el archivo 'fpdf.php' en el servidor. Asegúrate de haberlo subido por GitHub.");
+}
+
 require('fpdf.php'); 
 include("conexion.php");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $tipo = $_POST['tipo_reporte'] ?? 'diario';
     
-    // Capturamos las fechas del rango personalizado
     $fecha_inicio = !empty($_POST['fecha_inicio']) ? mysqli_real_escape_string($conexion, $_POST['fecha_inicio']) : date('Y-m-d');
     $fecha_fin = !empty($_POST['fecha_fin']) ? mysqli_real_escape_string($conexion, $_POST['fecha_fin']) : date('Y-m-d');
 
     class PDF extends FPDF {
         function Header() {
-            // Fondo oscuro para el encabezado
             $this->SetFillColor(20, 20, 20);
             $this->Rect(0, 0, 210, 35, 'F');
             $this->SetFont('Arial', 'B', 18);
-            $this->SetTextColor(46, 204, 113); // Verde La 103
+            $this->SetTextColor(46, 204, 113); 
             $this->Cell(0, 15, iconv('UTF-8', 'windows-1252', 'Canchas La 103 - Informe Financiero'), 0, 1, 'C');
             $this->SetFont('Arial', 'I', 10);
             $this->SetTextColor(255, 255, 255);
@@ -69,11 +77,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdf->Cell(0, 10, iconv('UTF-8', 'windows-1252', $titulo), 0, 1);
     $pdf->Ln(5);
 
-    // Encabezados de tabla
+    // Encabezados
     $pdf->SetFillColor(46, 204, 113);
     $pdf->SetTextColor(255);
     $pdf->SetFont('Arial', 'B', 9);
-    
     $pdf->Cell(12, 10, 'ID', 1, 0, 'C', true);
     $pdf->Cell(25, 10, 'Fecha', 1, 0, 'C', true);
     $pdf->Cell(35, 10, 'Tipo Cancha', 1, 0, 'C', true);
@@ -85,33 +92,35 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdf->SetFont('Arial', '', 9);
     
     $res = mysqli_query($conexion, $sql);
+    
     if (!$res) {
-        die("Error en reporte: " . mysqli_error($conexion));
+        die("Error en la consulta SQL: " . mysqli_error($conexion));
     }
 
     $total_recaudado = 0;
     while($row = mysqli_fetch_assoc($res)) {
         $pdf->Cell(12, 10, $row['id'], 1, 0, 'C');
-        $fecha_formateada = date("d/m/Y", strtotime($row['fecha_reserva']));
-        $pdf->Cell(25, 10, $fecha_formateada, 1, 0, 'C');
+        $fecha_form = date("d/m/Y", strtotime($row['fecha_reserva']));
+        $pdf->Cell(25, 10, $fecha_form, 1, 0, 'C');
         $pdf->Cell(35, 10, iconv('UTF-8', 'windows-1252', $row['nombre_cancha']), 1, 0, 'C');
         $pdf->Cell(55, 10, iconv('UTF-8', 'windows-1252', $row['usuario']), 1, 0);
         $pdf->Cell(30, 10, $row['hora_inicio'], 1, 0, 'C');
         $pdf->Cell(33, 10, '$' . number_format($row['precio_total_cancha']), 1, 1, 'R');
-        
         $total_recaudado += $row['precio_total_cancha'];
     }
 
-    // Fila de Total
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->SetFillColor(240, 240, 240);
     $pdf->Cell(157, 12, 'MONTO TOTAL RECAUDADO:', 1, 0, 'R', true);
     $pdf->Cell(33, 12, '$' . number_format($total_recaudado), 1, 1, 'R', true);
 
-    // Limpiamos cualquier salida previa para evitar errores de PDF corrupto
+    // --- LIMPIEZA FINAL AGRESIVA ---
     if (ob_get_length()) ob_end_clean();
     $pdf->Output('I', 'Reporte_La103_Ventas.pdf');
+    exit; 
 } else {
+    // Si entras por GET (escribiendo el link), te regresa al admin
     header("Location: admin_reservas.php");
+    exit;
 }
 ?>
