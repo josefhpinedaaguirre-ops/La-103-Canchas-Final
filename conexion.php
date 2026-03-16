@@ -1,23 +1,20 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// Reportar errores para saber qué pasa
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
-// Railway inyecta estas variables automáticamente si haces el "Add Reference"
-// Usamos getenv() para leer los valores reales del servidor
-$host = getenv('MYSQLHOST') ?: "localhost";
-$user = getenv('MYSQLUSER') ?: "root";
-$pass = getenv('MYSQLPASSWORD') ?: ""; // En local suele ser vacío o root
-$db   = getenv('MYSQLDATABASE') ?: "la_103";
-$port = getenv('MYSQLPORT') ?: "28578"; // Usamos el puerto que vimos en tus capturas
+try {
+    // Railway nos da estas variables. Si no existen, usa los valores de tu PC
+    $host = getenv('MYSQLHOST') ?: "localhost";
+    $user = getenv('MYSQLUSER') ?: "root";
+    $pass = getenv('MYSQLPASSWORD') ?: "root"; 
+    $db   = getenv('MYSQLDATABASE') ?: "la_103";
+    $port = getenv('MYSQLPORT') ?: "3306";
 
-// Añadimos el puerto a la conexión, que es vital en Railway
-$conexion = mysqli_connect($host, $user, $pass, $db, $port);
+    $conexion = mysqli_connect($host, $user, $pass, $db, $port);
+    mysqli_set_charset($conexion, "utf8");
 
-if (!$conexion) {
-    die("Error de conexión: " . mysqli_connect_error());
+} catch (mysqli_sql_exception $e) {
+    // Esto te dirá exactamente qué falló si vuelve a pasar
+    die("Error crítico de conexión: " . $e->getMessage());
 }
-
-// Configurar caracteres latinos (para que se vean bien las tildes y la Ñ)
-mysqli_set_charset($conexion, "utf8");
 ?>
