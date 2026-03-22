@@ -34,6 +34,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
+    // --- NUEVA VALIDACIÓN: TIEMPO MÁXIMO (1H 10MIN = 70 MINUTOS) ---
+    $inicio_ts = strtotime($hora_inicio);
+    $fin_ts = strtotime($hora_fin);
+    $diferencia_minutos = ($fin_ts - $inicio_ts) / 60;
+
+    if ($diferencia_minutos > 70) {
+        echo "<script>
+                alert('⚠️ ERROR: El tiempo máximo permitido por reserva es de 1 hora y 10 minutos.'); 
+                window.history.back();
+              </script>";
+        exit();
+    }
+
     // --- 1. VALIDACIÓN DE DISPONIBILIDAD ---
     $sql_check = "SELECT id, estado_reserva FROM reservas 
                   WHERE id_cancha = '$id_cancha' 
@@ -76,16 +89,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $cant = (int)$cant; 
 
                 if ($cant > 0) {
-                    // Consultamos el nombre del implemento para aplicar la restricción
                     $sql_info = "SELECT nombre_objeto, cantidad_total FROM implementos WHERE id = '$id_imp'";
                     $res_info = mysqli_query($conexion, $sql_info);
                     $info = mysqli_fetch_assoc($res_info);
                     
                     if ($info) {
                         $nombre_obj = strtolower($info['nombre_objeto']);
-                        $limite_permitido = $info['cantidad_total']; // Por defecto el stock
+                        $limite_permitido = $info['cantidad_total']; 
 
-                        // Aplicar reglas específicas
                         if (strpos($nombre_obj, 'balon') !== false || strpos($nombre_obj, 'balón') !== false) {
                             $limite_permitido = 1;
                         } elseif (strpos($nombre_obj, 'peto') !== false) {
@@ -94,17 +105,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             $limite_permitido = 2;
                         }
 
-                        // Si el usuario intentó mandar más de lo permitido, lo bajamos al límite
                         if ($cant > $limite_permitido) {
                             $cant = $limite_permitido;
                         }
 
-                        // Insertar préstamo con la cantidad ya validada
                         $sql_prestamo = "INSERT INTO prestamos (id_reserva, id_implemento, cantidad) 
                                          VALUES ('$id_nueva_reserva', '$id_imp', '$cant')";
                         mysqli_query($conexion, $sql_prestamo);
 
-                        // Actualizar stock
                         $sql_update_stock = "UPDATE implementos 
                                              SET cantidad_total = cantidad_total - $cant 
                                              WHERE id = '$id_imp' AND cantidad_total >= $cant";
