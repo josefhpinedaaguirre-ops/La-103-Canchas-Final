@@ -2,6 +2,11 @@
 // 1. Iniciamos la sesión para poder leer los datos del usuario
 session_start();
 
+// --- NUEVO: BLOQUEO DE CACHÉ (Evita que vuelvan atrás al cerrar sesión) ---
+header("Cache-Control: no-cache, no-store, must-revalidate"); 
+header("Pragma: no-cache"); 
+header("Expires: 0"); 
+
 // 2. EL ESCUDO: Si no existe el ID en la sesión, significa que no se ha logueado.
 if (!isset($_SESSION['id'])) {
     header("Location: registro.html");
@@ -20,6 +25,15 @@ $id_usuario = $_SESSION['id']; // Guardamos el ID para usarlo en los filtros
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel La 103 | Inicio</title>
+    
+    <script>
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
+
     <style>
         /* Estilo general negro y verde */
         body { 
@@ -148,7 +162,7 @@ $id_usuario = $_SESSION['id']; // Guardamos el ID para usarlo en los filtros
                     <option value="personalizado">Rango Personalizado</option>
                 </select>
 
-                <div id="rango_fechas" style="display: none; margin-bottom: 15px; justify-content: space-between; align-items: center; display: none;">
+                <div id="rango_fechas" style="display: none; margin-bottom: 15px; justify-content: space-between; align-items: center;">
                     <input type="date" name="fecha_inicio" class="input-fecha-reporte" value="<?php echo date('Y-m-d'); ?>">
                     <span style="color: #888;">a</span>
                     <input type="date" name="fecha_fin" class="input-fecha-reporte" value="<?php echo date('Y-m-d'); ?>">
@@ -166,7 +180,6 @@ $id_usuario = $_SESSION['id']; // Guardamos el ID para usarlo en los filtros
     function toggleFechas() {
         var tipo = document.getElementById('tipo_reporte').value;
         var divFechas = document.getElementById('rango_fechas');
-        // Usamos flex para que los inputs queden alineados si se muestra
         divFechas.style.display = (tipo === 'personalizado') ? 'flex' : 'none';
     }
     </script>
