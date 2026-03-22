@@ -4,13 +4,14 @@ session_start();
 include("conexion.php");
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Usamos los nombres de los campos que vienen de tu formulario HTML
-    $correo = $_POST['correo'];
-    $pass   = $_POST['contrasena'];
+    
+    // --- CAMBIO IMPORTANTE: Ahora usamos los nombres seguros que pusimos en el HTML ---
+    // También agregamos mysqli_real_escape_string para evitar inyecciones SQL (seguridad extra)
+    $correo = mysqli_real_escape_string($conexion, $_POST['correo_103']);
+    $pass   = $_POST['clave_103']; // La clave la validamos abajo
 
     // 1. CAMBIAMOS 'Usuarios' por 'usuarios' (minúscula para Linux/Railway)
     // 2. Verifica si en tu tabla es 'contrasena' o 'password'. 
-    // Si sigue fallando, cambia 'contrasena' por 'password' abajo.
     $sql = "SELECT id, nombre, contrasena, rol FROM usuarios WHERE correo = '$correo'";
     
     // Ejecutamos la consulta
@@ -35,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     } else {
         // Si el error 500 sigue, es probable que la tabla no tenga la columna 'correo'
-        echo "<script>alert('Correo no registrado o error en tabla'); window.history.back();</script>";
+        echo "<script>alert('Correo no registrado o error en la base de datos'); window.history.back();</script>";
     }
 }
 mysqli_close($conexion);
