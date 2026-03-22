@@ -14,7 +14,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $hora_inicio   = $_POST['hora_inicio'];
     $hora_fin      = $_POST['hora_fin'];
 
-    // --- NUEVO: VALIDACIÓN DE TIEMPO (SEGURIDAD) ---
+    // --- VALIDACIÓN DE TIEMPO Y FECHA ---
     date_default_timezone_set('America/Bogota'); 
     $fecha_actual = date('Y-m-d');
     $hora_actual = date('H:i');
@@ -34,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    // --- NUEVA VALIDACIÓN: TIEMPO MÁXIMO (1H 10MIN = 70 MINUTOS) ---
+    // --- VALIDACIÓN: TIEMPO MÁXIMO (1H 10MIN = 70 MINUTOS) ---
     $inicio_ts = strtotime($hora_inicio);
     $fin_ts = strtotime($hora_fin);
     $diferencia_minutos = ($fin_ts - $inicio_ts) / 60;
@@ -59,12 +59,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // --- 2. LÓGICA DE PRECIOS AUTOMÁTICOS ---
     $dia_semana = date('w', strtotime($fecha_reserva));
     $hora_entera = (int)date('H', strtotime($hora_inicio));
+    // Fines de semana (0=Dom, 6=Sáb) o después de las 5pm (17:00)
     $precio_total = ($dia_semana == 0 || $dia_semana == 6 || $hora_entera >= 17) ? 120000 : 80000;
     $estado = 'pendiente';
 
     if ($reserva_existente) {
         if ($reserva_existente['estado_reserva'] != 'finalizada') {
-            echo "<script>alert('⚠️ ERROR: La cancha ya está reservada.'); window.history.back();</script>";
+            echo "<script>alert('⚠️ ERROR: La cancha ya está reservada en este horario.'); window.history.back();</script>";
             exit();
         } else {
             $id_reutilizar = $reserva_existente['id'];
@@ -76,14 +77,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                        VALUES ('$id_usuario', '$id_cancha', '$fecha_reserva', '$hora_inicio', '$hora_fin', '$precio_total', '$estado')";
     }
 
-    // --- 3. EJECUTAR ACCIÓN ---
+    // --- 3. EJECUTAR ACCIÓN Y PROCESAR IMPLEMENTOS ---
     if (mysqli_query($conexion, $sql_accion)) {
         
         if (!isset($id_nueva_reserva)) {
             $id_nueva_reserva = mysqli_insert_id($conexion);
         }
 
-        // --- 4. PRÉSTAMOS CON VALIDACIÓN DE TOPES MÁXIMOS ---
         if (isset($_POST['cantidades']) && is_array($_POST['cantidades'])) {
             foreach ($_POST['cantidades'] as $id_imp => $cant) {
                 $cant = (int)$cant; 
@@ -97,6 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         $nombre_obj = strtolower($info['nombre_objeto']);
                         $limite_permitido = $info['cantidad_total']; 
 
+                        // REGLA ESTRICTA: Balón máximo 1
                         if (strpos($nombre_obj, 'balon') !== false || strpos($nombre_obj, 'balón') !== false) {
                             $limite_permitido = 1;
                         } elseif (strpos($nombre_obj, 'peto') !== false) {
@@ -105,14 +106,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             $limite_permitido = 2;
                         }
 
+                        // Si el usuario intentó enviar más por código, aquí lo frenamos
                         if ($cant > $limite_permitido) {
                             $cant = $limite_permitido;
                         }
 
+                        // Insertar en la tabla préstamos
                         $sql_prestamo = "INSERT INTO prestamos (id_reserva, id_implemento, cantidad) 
                                          VALUES ('$id_nueva_reserva', '$id_imp', '$cant')";
                         mysqli_query($conexion, $sql_prestamo);
 
+                        // Restar del inventario
                         $sql_update_stock = "UPDATE implementos 
                                              SET cantidad_total = cantidad_total - $cant 
                                              WHERE id = '$id_imp' AND cantidad_total >= $cant";
@@ -123,7 +127,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         echo "<script>
-                alert('✅ ¡Reserva registrada con éxito! Valor: $" . number_format($precio_total) . "');
+                alert('✅ ¡Reserva registrada con éxito!\\nDuración: " . $diferencia_minutos . " min.\\nValor: $" . number_format($precio_total) . "');
                 window.location.href='index.php';
               </script>";
     } else {
