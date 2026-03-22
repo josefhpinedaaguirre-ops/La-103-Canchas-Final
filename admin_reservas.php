@@ -1,8 +1,14 @@
 <?php
 session_start();
+
+// --- 1. BLOQUEO DE CACHÉ (Para que no puedan volver atrás al cerrar sesión) ---
+header("Cache-Control: no-cache, no-store, must-revalidate"); 
+header("Pragma: no-cache"); 
+header("Expires: 0"); 
+
 include("conexion.php");
 
-// Verificación de seguridad
+// 2. Verificación de seguridad
 if (!isset($_SESSION['rol']) || $_SESSION['rol'] != 'admin') {
     header("Location: index.php");
     exit();
@@ -16,8 +22,7 @@ if (isset($_POST['cancelar_seleccionadas'])) {
         foreach ($_POST['reservas_cancelar'] as $id_reserva) {
             $id_reserva = mysqli_real_escape_string($conexion, $id_reserva);
             
-            // 1. Opcional: Devolver stock si tenían implementos (si no lo hace finalizar_reserva.php)
-            // 2. Cambiamos el estado a 'finalizada' para liberar el horario
+            // Cambiamos el estado a 'finalizada' para liberar el horario
             $sql_cancelar = "UPDATE reservas SET estado_reserva = 'finalizada' WHERE id = '$id_reserva'";
             mysqli_query($conexion, $sql_cancelar);
         }
@@ -49,6 +54,15 @@ $resultado = mysqli_query($conexion, $sql);
 <head>
     <meta charset="UTF-8">
     <title>Admin Reservas | La 103</title>
+    
+    <script>
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
+
     <style>
         body { background: #0f0f0f; color: white; font-family: 'Segoe UI', sans-serif; padding: 20px; }
         .header-info { background: #1a1a1a; padding: 20px; border-radius: 12px; border-left: 5px solid #2ecc71; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
