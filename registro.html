@@ -40,7 +40,7 @@
         <h2>La 103 ⚽</h2>
         <p>¡Listo para el partido!</p>
         
-        <form action="validar_login.php" method="POST" autocomplete="off">
+        <form id="loginForm" action="validar_login.php" method="POST" autocomplete="off" novalidate>
             
             <div class="input-group">
                 <label>Correo Electrónico</label>
@@ -62,16 +62,28 @@
     </div>
 
     <script>
-        // Limpia los campos físicamente al cargar la página por si el navegador intenta rellenarlos
-        window.onload = function() {
-            document.getElementById('campo_correo').value = '';
-            document.getElementById('campo_clave').value = '';
-            
-            // Reemplaza el historial para que el "atrás" no traiga datos de formularios
+        /**
+         * EL GOLPE DE GRACIA:
+         * Usamos 'pageshow' porque se ejecuta incluso al volver atrás (BFCache).
+         */
+        window.onpageshow = function(event) {
+            // 1. Limpiamos los campos manualmente
+            document.getElementById('campo_correo').value = "";
+            document.getElementById('campo_clave').value = "";
+
+            // 2. Si la página viene de la memoria caché (botón atrás), forzamos recarga
+            if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+                window.location.reload();
+            }
+
+            // 3. Reemplazamos el historial
             if (window.history.replaceState) {
                 window.history.replaceState(null, null, window.location.href);
             }
         };
+
+        // Extra: Resetear el formulario al cargar para asegurar limpieza total
+        document.getElementById('loginForm').reset();
     </script>
 </body>
 </html>
