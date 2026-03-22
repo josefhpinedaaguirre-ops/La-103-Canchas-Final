@@ -12,7 +12,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $id_cancha     = $_POST['id_cancha'];
     $fecha_reserva = $_POST['fecha_reserva'];
     $hora_inicio   = $_POST['hora_inicio'];
-    $hora_fin       = $_POST['hora_fin'];
+    $hora_fin      = $_POST['hora_fin'];
+
+    // --- NUEVO: VALIDACIÓN DE TIEMPO (SEGURIDAD) ---
+    date_default_timezone_set('America/Bogota'); // Asegúrate que coincida con reservar.php
+    $fecha_actual = date('Y-m-d');
+    $hora_actual = date('H:i');
+
+    // Validar que la fecha no sea pasada
+    if ($fecha_reserva < $fecha_actual) {
+        echo "<script>alert('⚠️ ERROR: No puedes reservar en una fecha que ya pasó.'); window.history.back();</script>";
+        exit();
+    }
+
+    // Validar que la hora no sea pasada (si la reserva es para hoy)
+    if ($fecha_reserva == $fecha_actual && $hora_inicio < $hora_actual) {
+        echo "<script>alert('⚠️ ERROR: La hora seleccionada ya ha pasado.'); window.history.back();</script>";
+        exit();
+    }
+
+    // Validar que la hora de fin sea lógica
+    if ($hora_fin <= $hora_inicio) {
+        echo "<script>alert('⚠️ ERROR: La hora de fin debe ser posterior a la de inicio.'); window.history.back();</script>";
+        exit();
+    }
 
     // --- 1. VALIDACIÓN DE DISPONIBILIDAD (Tablas en minúscula) ---
     $sql_check = "SELECT id, estado_reserva FROM reservas 
