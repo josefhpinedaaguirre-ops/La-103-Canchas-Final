@@ -97,14 +97,29 @@ if (!$res_implementos) {
 
             <div class="seccion-implementos">
                 <label style="color: #2ecc71; font-weight: bold; margin-bottom: 10px; display: block;">⚽ Préstamo gratuito:</label>
-                <?php while($impl = mysqli_fetch_assoc($res_implementos)): ?>
+                <?php while($impl = mysqli_fetch_assoc($res_implementos)): 
+                    // --- LÓGICA DE MÁXIMOS POR TIPO ---
+                    $nombre = strtolower($impl['nombre_objeto']);
+                    $limite = $impl['cantidad_total']; // Por defecto el stock total
+
+                    if (strpos($nombre, 'balon') !== false || strpos($nombre, 'balón') !== false) {
+                        $limite = 1;
+                    } elseif (strpos($nombre, 'peto') !== false) {
+                        $limite = 2;
+                    } elseif (strpos($nombre, 'guante') !== false) {
+                        $limite = 2;
+                    }
+
+                    // El max real es el menor entre el stock y el límite por usuario
+                    $max_final = min($limite, $impl['cantidad_total']);
+                ?>
                     <div class="impl-item">
                         <div class="impl-info">
                             <strong><?php echo htmlspecialchars($impl['nombre_objeto']); ?></strong>
-                            <br><small style="color: #666;">Disponibles: <?php echo $impl['cantidad_total']; ?></small>
+                            <br><small style="color: #666;">Máx. permitido: <?php echo $max_final; ?></small>
                         </div>
                         <input type="number" name="cantidades[<?php echo $impl['id']; ?>]" 
-                               class="impl-cant" min="0" max="<?php echo $impl['cantidad_total']; ?>" value="0">
+                               class="impl-cant" min="0" max="<?php echo $max_final; ?>" value="0">
                     </div>
                 <?php endwhile; ?>
             </div>
