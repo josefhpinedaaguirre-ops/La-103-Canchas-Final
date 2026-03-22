@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (mysqli_query($conexion, $sql_update)) {
         echo "<script>
                 alert('✅ Reserva actualizada correctamente.');
-                window.location.href = 'ver_reservas.php';
+                window.location.href = 'ver_reserva.php';
               </script>";
     } else {
         echo "Error actualizando: " . mysqli_error($conexion);
