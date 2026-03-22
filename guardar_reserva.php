@@ -15,29 +15,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $hora_fin      = $_POST['hora_fin'];
 
     // --- NUEVO: VALIDACIÓN DE TIEMPO (SEGURIDAD) ---
-    date_default_timezone_set('America/Bogota'); // Asegúrate que coincida con reservar.php
+    date_default_timezone_set('America/Bogota'); 
     $fecha_actual = date('Y-m-d');
     $hora_actual = date('H:i');
 
-    // Validar que la fecha no sea pasada
     if ($fecha_reserva < $fecha_actual) {
         echo "<script>alert('⚠️ ERROR: No puedes reservar en una fecha que ya pasó.'); window.history.back();</script>";
         exit();
     }
 
-    // Validar que la hora no sea pasada (si la reserva es para hoy)
     if ($fecha_reserva == $fecha_actual && $hora_inicio < $hora_actual) {
         echo "<script>alert('⚠️ ERROR: La hora seleccionada ya ha pasado.'); window.history.back();</script>";
         exit();
     }
 
-    // Validar que la hora de fin sea lógica
     if ($hora_fin <= $hora_inicio) {
         echo "<script>alert('⚠️ ERROR: La hora de fin debe ser posterior a la de inicio.'); window.history.back();</script>";
         exit();
     }
 
-    // --- 1. VALIDACIÓN DE DISPONIBILIDAD (Tablas en minúscula) ---
+    // --- 1. VALIDACIÓN DE DISPONIBILIDAD ---
     $sql_check = "SELECT id, estado_reserva FROM reservas 
                   WHERE id_cancha = '$id_cancha' 
                   AND fecha_reserva = '$fecha_reserva' 
@@ -53,26 +50,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $estado = 'pendiente';
 
     if ($reserva_existente) {
-        // Si hay algo activo, bloqueamos
         if ($reserva_existente['estado_reserva'] != 'finalizada') {
-            echo "<script>
-                    alert('⚠️ ERROR: La cancha ya está reservada para esa hora. Por favor elige otro horario.');
-                    window.history.back();
-                  </script>";
+            echo "<script>alert('⚠️ ERROR: La cancha ya está reservada.'); window.history.back();</script>";
             exit();
         } else {
-            // REUTILIZAR FILA (UPDATE) - Tabla en minúscula
             $id_reutilizar = $reserva_existente['id'];
-            $sql_accion = "UPDATE reservas SET 
-                           id_usuario = '$id_usuario', 
-                           hora_fin = '$hora_fin', 
-                           precio_total_cancha = '$precio_total', 
-                           estado_reserva = 'pendiente' 
-                           WHERE id = '$id_reutilizar'";
+            $sql_accion = "UPDATE reservas SET id_usuario = '$id_usuario', hora_fin = '$hora_fin', precio_total_cancha = '$precio_total', estado_reserva = 'pendiente' WHERE id = '$id_reutilizar'";
             $id_nueva_reserva = $id_reutilizar;
         }
     } else {
-        // INSERTAR NUEVO - Tabla en minúscula
         $sql_accion = "INSERT INTO reservas (id_usuario, id_cancha, fecha_reserva, hora_inicio, hora_fin, precio_total_cancha, estado_reserva) 
                        VALUES ('$id_usuario', '$id_cancha', '$fecha_reserva', '$hora_inicio', '$hora_fin', '$precio_total', '$estado')";
     }
@@ -84,22 +70,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $id_nueva_reserva = mysqli_insert_id($conexion);
         }
 
-        // --- 4. PRÉSTAMOS E INVENTARIO (Tablas: prestamos, implementos) ---
+        // --- 4. PRÉSTAMOS CON VALIDACIÓN DE TOPES MÁXIMOS ---
         if (isset($_POST['cantidades']) && is_array($_POST['cantidades'])) {
             foreach ($_POST['cantidades'] as $id_imp => $cant) {
                 $cant = (int)$cant; 
 
                 if ($cant > 0) {
-                    // Tabla 'prestamos' en minúscula
-                    $sql_prestamo = "INSERT INTO prestamos (id_reserva, id_implemento, cantidad) 
-                                     VALUES ('$id_nueva_reserva', '$id_imp', '$cant')";
-                    mysqli_query($conexion, $sql_prestamo);
+                    // Consultamos el nombre del implemento para aplicar la restricción
+                    $sql_info = "SELECT nombre_objeto, cantidad_total FROM implementos WHERE id = '$id_imp'";
+                    $res_info = mysqli_query($conexion, $sql_info);
+                    $info = mysqli_fetch_assoc($res_info);
+                    
+                    if ($info) {
+                        $nombre_obj = strtolower($info['nombre_objeto']);
+                        $limite_permitido = $info['cantidad_total']; // Por defecto el stock
 
-                    // Tabla 'implementos' en minúscula
-                    $sql_update_stock = "UPDATE implementos 
-                                         SET cantidad_total = cantidad_total - $cant 
-                                         WHERE id = '$id_imp' AND cantidad_total >= $cant";
-                    mysqli_query($conexion, $sql_update_stock);
+                        // Aplicar reglas específicas
+                        if (strpos($nombre_obj, 'balon') !== false || strpos($nombre_obj, 'balón') !== false) {
+                            $limite_permitido = 1;
+                        } elseif (strpos($nombre_obj, 'peto') !== false) {
+                            $limite_permitido = 2;
+                        } elseif (strpos($nombre_obj, 'guante') !== false) {
+                            $limite_permitido = 2;
+                        }
+
+                        // Si el usuario intentó mandar más de lo permitido, lo bajamos al límite
+                        if ($cant > $limite_permitido) {
+                            $cant = $limite_permitido;
+                        }
+
+                        // Insertar préstamo con la cantidad ya validada
+                        $sql_prestamo = "INSERT INTO prestamos (id_reserva, id_implemento, cantidad) 
+                                         VALUES ('$id_nueva_reserva', '$id_imp', '$cant')";
+                        mysqli_query($conexion, $sql_prestamo);
+
+                        // Actualizar stock
+                        $sql_update_stock = "UPDATE implementos 
+                                             SET cantidad_total = cantidad_total - $cant 
+                                             WHERE id = '$id_imp' AND cantidad_total >= $cant";
+                        mysqli_query($conexion, $sql_update_stock);
+                    }
                 }
             }
         }
