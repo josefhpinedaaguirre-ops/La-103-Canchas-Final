@@ -10,7 +10,7 @@ if (!isset($_SESSION['rol']) || $_SESSION['rol'] !== 'admin') {
 
 // --- LÓGICA DEL CRUD ---
 
-// 1. ELIMINAR (Tabla en minúscula)
+// 1. ELIMINAR
 if (isset($_GET['eliminar'])) {
     $id = mysqli_real_escape_string($conexion, $_GET['eliminar']);
     mysqli_query($conexion, "DELETE FROM implementos WHERE id = $id");
@@ -20,11 +20,15 @@ if (isset($_GET['eliminar'])) {
 // 2. AGREGAR O EDITAR
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $nombre = mysqli_real_escape_string($conexion, $_POST['nombre_objeto']);
-    $cantidad = mysqli_real_escape_string($conexion, $_POST['cantidad_total']);
+    $cantidad = (int)$_POST['cantidad_total']; // Forzamos a entero
     $estado = mysqli_real_escape_string($conexion, $_POST['estado_objeto']);
 
+    // VALIDACIÓN PHP: Si la cantidad es menor a 0, la forzamos a 0
+    if ($cantidad < 0) {
+        $cantidad = 0;
+    }
+
     if (isset($_POST['id_editar']) && !empty($_POST['id_editar'])) {
-        // ACTUALIZAR (Tabla en minúscula)
         $id = $_POST['id_editar'];
         $sql = "UPDATE implementos SET 
                 nombre_objeto='$nombre', 
@@ -32,7 +36,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 estado_objeto='$estado' 
                 WHERE id=$id";
     } else {
-        // INSERTAR NUEVO (Tabla en minúscula)
         $sql = "INSERT INTO implementos (nombre_objeto, cantidad_total, estado_objeto) 
                 VALUES ('$nombre', '$cantidad', '$estado')";
     }
@@ -97,7 +100,7 @@ $inventario = mysqli_query($conexion, "SELECT * FROM implementos");
         <input type="text" name="nombre_objeto" placeholder="Nombre (Ej: Balón Golty)" 
                value="<?php echo htmlspecialchars($edit_data['nombre_objeto'] ?? ''); ?>" required>
         
-        <input type="number" name="cantidad_total" placeholder="Cant." 
+        <input type="number" name="cantidad_total" placeholder="Cant." min="0"
                value="<?php echo $edit_data['cantidad_total'] ?? ''; ?>" required>
 
         <select name="estado_objeto">
