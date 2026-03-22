@@ -101,20 +101,18 @@ if (!$res_implementos) {
                     $nombre_real = $impl['nombre_objeto'];
                     $nombre_busqueda = strtolower($nombre_real);
                     
-                    // LÓGICA DE MÁXIMOS
+                    // LÓGICA DE MÁXIMOS Y CAMBIO DE NOMBRE
                     $limite = $impl['cantidad_total']; 
+                    $nombre_mostrar = htmlspecialchars($nombre_real);
 
-                    if (strpos($nombre_busqueda, 'balon') !== false || strpos($nombre_busqueda, 'balón') !== false) {
+                    // Si en la BD se llama Brazalete o Balón, mostramos "Balón Profesional"
+                    if (strpos($nombre_busqueda, 'balon') !== false || strpos($nombre_busqueda, 'balón') !== false || strpos($nombre_busqueda, 'brazalete') !== false) {
                         $limite = 1;
-                        $nombre_mostrar = "Balón de Fútbol"; // Forzamos el nombre a Balón
+                        $nombre_mostrar = "Balón Profesional"; 
                     } elseif (strpos($nombre_busqueda, 'peto') !== false) {
                         $limite = 2;
-                        $nombre_mostrar = htmlspecialchars($nombre_real);
                     } elseif (strpos($nombre_busqueda, 'guante') !== false) {
                         $limite = 2;
-                        $nombre_mostrar = htmlspecialchars($nombre_real);
-                    } else {
-                        $nombre_mostrar = htmlspecialchars($nombre_real);
                     }
 
                     $max_final = min($limite, $impl['cantidad_total']);
