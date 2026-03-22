@@ -4,14 +4,12 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// AJUSTE DE ZONA HORARIA (Fundamental para que no te filtre el día siguiente después de las 7pm)
 date_default_timezone_set('America/Bogota');
 
 ob_start();
 
-// 2. VERIFICAR SI EL ARCHIVO FPDF EXISTE
 if (!file_exists('fpdf.php')) {
-    die("Error: No se encuentra el archivo 'fpdf.php' en el servidor. Asegúrate de haberlo subido por GitHub.");
+    die("Error: No se encuentra el archivo 'fpdf.php'.");
 }
 
 require('fpdf.php'); 
@@ -29,10 +27,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $this->Rect(0, 0, 210, 35, 'F');
             $this->SetFont('Arial', 'B', 18);
             $this->SetTextColor(46, 204, 113); 
-            $this->Cell(0, 15, iconv('UTF-8', 'windows-1252', 'Canchas La 103 - Informe Financiero'), 0, 1, 'C');
+            $this->Cell(0, 15, iconv('UTF-8', 'windows-1252', 'Canchas La 103 - Recaudo Real'), 0, 1, 'C');
             $this->SetFont('Arial', 'I', 10);
             $this->SetTextColor(255, 255, 255);
-            $this->Cell(0, 5, iconv('UTF-8', 'windows-1252', 'Detalle de Reservas, Canchas y Recaudo'), 0, 1, 'C');
+            $this->Cell(0, 5, iconv('UTF-8', 'windows-1252', 'Ingresos por Pagos Realizados'), 0, 1, 'C');
             $this->Ln(15);
         }
 
@@ -49,33 +47,37 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdf->AddPage();
     $pdf->SetFont('Arial', '', 11);
 
-    // --- LÓGICA DE FILTROS CORREGIDA ---
+    // --- LÓGICA DE FILTROS POR FECHA DE PAGO (Ventas del momento) ---
+    // Nota: Se usa pa.fecha_pago (o como se llame tu columna en la tabla pagos)
+    
     if ($tipo == 'diario') {
         $hoy = date('Y-m-d');
-        $titulo = 'REPORTE DE VENTAS DEL DÍA: ' . date('d/m/Y');
-        $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva 
-                FROM reservas r 
+        $titulo = 'INGRESOS RECIBIDOS HOY: ' . date('d/m/Y');
+        $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva, pa.fecha_pago 
+                FROM pagos pa
+                JOIN reservas r ON pa.id_reserva = r.id
                 JOIN usuarios u ON r.id_usuario = u.id 
                 JOIN canchas c ON r.id_cancha = c.id
-                WHERE r.fecha_reserva = '$hoy'
-                ORDER BY r.hora_inicio ASC";
+                WHERE DATE(pa.fecha_pago) = '$hoy'
+                ORDER BY pa.fecha_pago DESC";
     } elseif ($tipo == 'personalizado') {
-        $titulo = 'REPORTE DEL ' . date("d/m/Y", strtotime($fecha_inicio)) . ' AL ' . date("d/m/Y", strtotime($fecha_fin));
-        $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva 
-                FROM reservas r 
+        $titulo = 'VENTAS DEL ' . date("d/m/Y", strtotime($fecha_inicio)) . ' AL ' . date("d/m/Y", strtotime($fecha_fin));
+        $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva, pa.fecha_pago 
+                FROM pagos pa
+                JOIN reservas r ON pa.id_reserva = r.id
                 JOIN usuarios u ON r.id_usuario = u.id 
                 JOIN canchas c ON r.id_cancha = c.id
-                WHERE r.fecha_reserva BETWEEN '$fecha_inicio' AND '$fecha_fin'
-                ORDER BY r.fecha_reserva ASC, r.hora_inicio ASC";
+                WHERE DATE(pa.fecha_pago) BETWEEN '$fecha_inicio' AND '$fecha_fin'
+                ORDER BY pa.fecha_pago ASC";
     } else {
-        // Semanal: Ajustado para que tome exactamente los últimos 7 días hasta hoy
-        $titulo = 'REPORTE DETALLADO - ÚLTIMOS 7 DÍAS';
-        $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva 
-                FROM reservas r 
+        $titulo = 'RECAUDO TOTAL - ÚLTIMOS 7 DÍAS';
+        $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva, pa.fecha_pago 
+                FROM pagos pa
+                JOIN reservas r ON pa.id_reserva = r.id
                 JOIN usuarios u ON r.id_usuario = u.id 
                 JOIN canchas c ON r.id_cancha = c.id
-                WHERE r.fecha_reserva BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND CURDATE()
-                ORDER BY r.fecha_reserva ASC, r.hora_inicio ASC";
+                WHERE DATE(pa.fecha_pago) BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND CURDATE()
+                ORDER BY pa.fecha_pago ASC";
     }
 
     $pdf->SetFont('Arial', 'B', 11);
@@ -85,45 +87,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Encabezados
     $pdf->SetFillColor(46, 204, 113);
     $pdf->SetTextColor(255);
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->Cell(12, 10, 'ID', 1, 0, 'C', true);
-    $pdf->Cell(25, 10, 'Fecha', 1, 0, 'C', true);
-    $pdf->Cell(35, 10, 'Tipo Cancha', 1, 0, 'C', true);
-    $pdf->Cell(55, 10, 'Jugador', 1, 0, 'C', true);
-    $pdf->Cell(30, 10, 'Hora', 1, 0, 'C', true);
+    $pdf->SetFont('Arial', 'B', 8);
+    $pdf->Cell(12, 10, 'ID Res', 1, 0, 'C', true);
+    $pdf->Cell(25, 10, 'F. Partido', 1, 0, 'C', true);
+    $pdf->Cell(35, 10, 'Cancha', 1, 0, 'C', true);
+    $pdf->Cell(50, 10, 'Jugador', 1, 0, 'C', true);
+    $pdf->Cell(35, 10, 'Fecha Pago', 1, 0, 'C', true);
     $pdf->Cell(33, 10, 'Monto', 1, 1, 'C', true);
 
     $pdf->SetTextColor(0);
-    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetFont('Arial', '', 8);
     
     $res = mysqli_query($conexion, $sql);
     
     if (!$res) {
-        die("Error en la consulta SQL: " . mysqli_error($conexion));
+        die("Error en la consulta: " . mysqli_error($conexion));
     }
 
     $total_recaudado = 0;
     while($row = mysqli_fetch_assoc($res)) {
         $pdf->Cell(12, 10, $row['id'], 1, 0, 'C');
-        $fecha_form = date("d/m/Y", strtotime($row['fecha_reserva']));
-        $pdf->Cell(25, 10, $fecha_form, 1, 0, 'C');
+        $f_partido = date("d/m/Y", strtotime($row['fecha_reserva']));
+        $pdf->Cell(25, 10, $f_partido, 1, 0, 'C');
         $pdf->Cell(35, 10, iconv('UTF-8', 'windows-1252', $row['nombre_cancha']), 1, 0, 'C');
-        $pdf->Cell(55, 10, iconv('UTF-8', 'windows-1252', $row['usuario']), 1, 0);
-        $pdf->Cell(30, 10, $row['hora_inicio'], 1, 0, 'C');
+        $pdf->Cell(50, 10, iconv('UTF-8', 'windows-1252', $row['usuario']), 1, 0);
+        
+        // Mostramos cuándo se hizo el pago realmente
+        $f_pago = date("d/m/Y H:i", strtotime($row['fecha_pago']));
+        $pdf->Cell(35, 10, $f_pago, 1, 0, 'C');
+        
         $pdf->Cell(33, 10, '$' . number_format($row['precio_total_cancha']), 1, 1, 'R');
         $total_recaudado += $row['precio_total_cancha'];
     }
 
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->SetFillColor(240, 240, 240);
-    $pdf->Cell(157, 12, 'MONTO TOTAL RECAUDADO:', 1, 0, 'R', true);
+    $pdf->Cell(157, 12, 'TOTAL DINERO ENTRADO:', 1, 0, 'R', true);
     $pdf->Cell(33, 12, '$' . number_format($total_recaudado), 1, 1, 'R', true);
 
     if (ob_get_length()) ob_end_clean();
-    $pdf->Output('I', 'Reporte_La103_Ventas.pdf');
+    $pdf->Output('I', 'Reporte_Ventas_Real.pdf');
     exit; 
-} else {
-    header("Location: admin_reservas.php");
-    exit;
 }
 ?>
