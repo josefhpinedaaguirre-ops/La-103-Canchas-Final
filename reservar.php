@@ -8,6 +8,11 @@ if (!isset($_SESSION['id'])) {
     exit();
 }
 
+// AJUSTE: Definir zona horaria para que la validación de hora sea precisa
+date_default_timezone_set('America/Bogota'); 
+$hoy = date('Y-m-d');
+$ahora = date('H:i');
+
 /**
  * LÓGICA DE TABLAS (Minúsculas para Railway/Linux)
  */
@@ -76,17 +81,17 @@ if (!$res_implementos) {
 
             <div class="campo">
                 <label>Fecha del Partido</label>
-                <input type="date" name="fecha_reserva" min="<?php echo date('Y-m-d'); ?>" required>
+                <input type="date" name="fecha_reserva" id="fecha_reserva" min="<?php echo $hoy; ?>" value="<?php echo $hoy; ?>" required>
             </div>
 
             <div style="display: flex; gap: 10px;">
                 <div class="campo" style="flex: 1;">
                     <label>Hora Inicio</label>
-                    <input type="time" name="hora_inicio" required>
+                    <input type="time" name="hora_inicio" id="hora_inicio" required>
                 </div>
                 <div class="campo" style="flex: 1;">
                     <label>Hora Fin</label>
-                    <input type="time" name="hora_fin" required>
+                    <input type="time" name="hora_fin" id="hora_fin" required>
                 </div>
             </div>
 
@@ -108,5 +113,27 @@ if (!$res_implementos) {
             <a href="index.php" style="display:block; text-align:center; color:#888; text-decoration:none; margin-top:15px; font-size:13px;">← Volver atrás</a>
         </form>
     </div>
+
+    <script>
+        const fInput = document.getElementById('fecha_reserva');
+        const hInicio = document.getElementById('hora_inicio');
+        const hFin = document.getElementById('hora_fin');
+
+        function validar() {
+            const hoy = "<?php echo $hoy; ?>";
+            const ahora = "<?php echo $ahora; ?>";
+
+            if (fInput.value === hoy) {
+                hInicio.min = ahora;
+            } else {
+                hInicio.min = "00:00";
+            }
+            hFin.min = hInicio.value;
+        }
+
+        fInput.addEventListener('change', validar);
+        hInicio.addEventListener('change', validar);
+        window.onload = validar;
+    </script>
 </body>
 </html>
