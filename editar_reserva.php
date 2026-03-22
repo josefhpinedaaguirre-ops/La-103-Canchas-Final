@@ -17,7 +17,7 @@ $datos = mysqli_fetch_assoc($res_reserva);
 
 // Si no existe la reserva o no es del usuario (y no es admin), para afuera
 if (!$datos || ($_SESSION['rol'] !== 'admin' && $datos['id_usuario'] != $_SESSION['id'])) {
-    header("Location: ver_reservas.php");
+    header("Location: ver_reserva.php");
     exit();
 }
 
@@ -80,7 +80,7 @@ $hoy = date('Y-m-d');
             </div>
 
             <button type="submit" class="btn-actualizar">Guardar Cambios</button>
-            <a href="ver_reservas.php" class="back-link">← Cancelar y volver</a>
+            <a href="ver_reserva.php" class="back-link">← Cancelar y volver</a>
         </form>
     </div>
 
