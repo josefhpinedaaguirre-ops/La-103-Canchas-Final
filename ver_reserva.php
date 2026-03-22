@@ -1,8 +1,14 @@
 <?php
 session_start();
+
+// --- 1. BLOQUEO DE CACHÉ (Seguridad para que no puedan volver atrás al cerrar sesión) ---
+header("Cache-Control: no-cache, no-store, must-revalidate"); 
+header("Pragma: no-cache"); 
+header("Expires: 0"); 
+
 include("conexion.php");
 
-// 1. Verificamos que el usuario esté logueado
+// 2. Verificamos que el usuario esté logueado
 if (!isset($_SESSION['id'])) {
     header("Location: registro.html"); 
     exit();
@@ -12,7 +18,7 @@ $id_usuario_logueado = $_SESSION['id'];
 $rol_usuario = $_SESSION['rol'];
 
 /**
- * 2. LÓGICA DE FILTRADO
+ * 3. LÓGICA DE FILTRADO
  */
 if ($rol_usuario === 'admin') {
     $where_clause = ""; 
@@ -20,7 +26,7 @@ if ($rol_usuario === 'admin') {
     $where_clause = "WHERE r.id_usuario = '$id_usuario_logueado'"; 
 }
 
-// 3. Consulta con JOIN
+// 4. Consulta con JOIN
 $sql = "SELECT r.id, u.nombre AS cliente, c.nombre_cancha, r.fecha_reserva, r.hora_inicio, r.hora_fin, r.precio_total_cancha, r.estado_reserva 
         FROM reservas r
         JOIN usuarios u ON r.id_usuario = u.id
@@ -40,6 +46,15 @@ if (!$resultado) {
 <head>
     <meta charset="UTF-8">
     <title>Mis Reservas | La 103</title>
+    
+    <script>
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
+
     <style>
         body { background: #0f0f0f; color: white; font-family: 'Segoe UI', sans-serif; padding: 20px; }
         .tabla-container { background: #1a1a1a; padding: 25px; border-radius: 15px; border: 1px solid #333; max-width: 1000px; margin: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
