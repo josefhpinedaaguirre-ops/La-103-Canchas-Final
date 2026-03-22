@@ -138,16 +138,32 @@ if (!$res_implementos) {
             const hoy = "<?php echo $hoy; ?>";
             const ahora = "<?php echo $ahora; ?>";
 
+            // Bloqueo de fecha y hora pasada
             if (fInput.value === hoy) {
                 hInicio.min = ahora;
             } else {
                 hInicio.min = "00:00";
             }
             hFin.min = hInicio.value;
+
+            // --- NUEVA VALIDACIÓN: MÁXIMO 1 HORA Y 10 MINUTOS (70 MIN) ---
+            if (hInicio.value && hFin.value) {
+                const inicio = new Date(`2026-01-01T${hInicio.value}`);
+                const fin = new Date(`2026-01-01T${hFin.value}`);
+                
+                const diferenciaMs = fin - inicio;
+                const diferenciaMin = Math.floor(diferenciaMs / 60000);
+
+                if (diferenciaMin > 70) {
+                    alert("⚠️ El tiempo máximo por reserva es de 1 hora y 10 minutos.");
+                    hFin.value = ""; // Resetea la hora de fin para obligar a corregir
+                }
+            }
         }
 
         fInput.addEventListener('change', validar);
         hInicio.addEventListener('change', validar);
+        hFin.addEventListener('change', validar);
         window.onload = validar;
     </script>
 </body>
