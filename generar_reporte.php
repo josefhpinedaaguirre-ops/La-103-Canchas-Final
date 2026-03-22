@@ -1,8 +1,11 @@
 <?php
-// 1. ACTIVAR REPORTES DE ERROR (Esto nos dirá por qué sale en blanco)
+// 1. ACTIVAR REPORTES DE ERROR
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
+
+// AJUSTE DE ZONA HORARIA (Fundamental para que no te filtre el día siguiente después de las 7pm)
+date_default_timezone_set('America/Bogota');
 
 ob_start();
 
@@ -46,14 +49,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdf->AddPage();
     $pdf->SetFont('Arial', '', 11);
 
-    // --- CONSULTAS CON TABLAS EN MINÚSCULA PARA RAILWAY ---
+    // --- LÓGICA DE FILTROS CORREGIDA ---
     if ($tipo == 'diario') {
+        $hoy = date('Y-m-d');
         $titulo = 'REPORTE DE VENTAS DEL DÍA: ' . date('d/m/Y');
         $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva 
                 FROM reservas r 
                 JOIN usuarios u ON r.id_usuario = u.id 
                 JOIN canchas c ON r.id_cancha = c.id
-                WHERE r.fecha_reserva = CURDATE()
+                WHERE r.fecha_reserva = '$hoy'
                 ORDER BY r.hora_inicio ASC";
     } elseif ($tipo == 'personalizado') {
         $titulo = 'REPORTE DEL ' . date("d/m/Y", strtotime($fecha_inicio)) . ' AL ' . date("d/m/Y", strtotime($fecha_fin));
@@ -64,12 +68,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 WHERE r.fecha_reserva BETWEEN '$fecha_inicio' AND '$fecha_fin'
                 ORDER BY r.fecha_reserva ASC, r.hora_inicio ASC";
     } else {
+        // Semanal: Ajustado para que tome exactamente los últimos 7 días hasta hoy
         $titulo = 'REPORTE DETALLADO - ÚLTIMOS 7 DÍAS';
         $sql = "SELECT r.id, u.nombre AS usuario, c.nombre_cancha, r.precio_total_cancha, r.hora_inicio, r.fecha_reserva 
                 FROM reservas r 
                 JOIN usuarios u ON r.id_usuario = u.id 
                 JOIN canchas c ON r.id_cancha = c.id
-                WHERE r.fecha_reserva >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                WHERE r.fecha_reserva BETWEEN DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND CURDATE()
                 ORDER BY r.fecha_reserva ASC, r.hora_inicio ASC";
     }
 
@@ -114,12 +119,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pdf->Cell(157, 12, 'MONTO TOTAL RECAUDADO:', 1, 0, 'R', true);
     $pdf->Cell(33, 12, '$' . number_format($total_recaudado), 1, 1, 'R', true);
 
-    // --- LIMPIEZA FINAL AGRESIVA ---
     if (ob_get_length()) ob_end_clean();
     $pdf->Output('I', 'Reporte_La103_Ventas.pdf');
     exit; 
 } else {
-    // Si entras por GET (escribiendo el link), te regresa al admin
     header("Location: admin_reservas.php");
     exit;
 }
