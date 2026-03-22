@@ -39,22 +39,39 @@
     <div class="login-card">
         <h2>La 103 ⚽</h2>
         <p>¡Listo para el partido!</p>
-        <form action="validar_login.php" method="POST">
+        
+        <form action="validar_login.php" method="POST" autocomplete="off">
             
             <div class="input-group">
                 <label>Correo Electrónico</label>
-                <input type="email" name="correo" placeholder="ejemplo@gol.com" required>
+                <input type="email" name="correo_103" id="campo_correo" placeholder="ejemplo@gol.com" required autocomplete="off">
             </div>
+            
             <div class="input-group">
                 <label>Contraseña</label>
-                <input type="password" name="contrasena" placeholder="********" required>
+                <input type="password" name="clave_103" id="campo_clave" placeholder="********" required autocomplete="off">
             </div>
+            
             <button type="submit" class="btn-entrar">Pisar la cancha</button>
         
         </form>
+        
         <div class="footer-links">
             <p>¿No tienes cuenta? <a href="nuevo_registro.html">Regístrate aquí</a></p>
         </div>
     </div>
+
+    <script>
+        // Limpia los campos físicamente al cargar la página por si el navegador intenta rellenarlos
+        window.onload = function() {
+            document.getElementById('campo_correo').value = '';
+            document.getElementById('campo_clave').value = '';
+            
+            // Reemplaza el historial para que el "atrás" no traiga datos de formularios
+            if (window.history.replaceState) {
+                window.history.replaceState(null, null, window.location.href);
+            }
+        };
+    </script>
 </body>
 </html>
