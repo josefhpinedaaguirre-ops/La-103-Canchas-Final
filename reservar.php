@@ -17,7 +17,7 @@ $ahora = date('H:i');
  * LÓGICA DE TABLAS (Minúsculas para Railway/Linux)
  */
 
-// 1. Consultamos las canchas (Canchas -> canchas)
+// 1. Consultamos las canchas
 $sql_canchas = "SELECT id, nombre_cancha FROM canchas WHERE estado = 'disponible'";
 $res_canchas = mysqli_query($conexion, $sql_canchas);
 
@@ -25,7 +25,7 @@ if (!$res_canchas) {
     die("Error consultando canchas: " . mysqli_error($conexion));
 }
 
-// 2. Consultamos los implementos (Implementos -> implementos)
+// 2. Consultamos los implementos
 $sql_implementos = "SELECT id, nombre_objeto, cantidad_total FROM implementos WHERE cantidad_total > 0";
 $res_implementos = mysqli_query($conexion, $sql_implementos);
 
@@ -96,27 +96,33 @@ if (!$res_implementos) {
             </div>
 
             <div class="seccion-implementos">
-                <label style="color: #2ecc71; font-weight: bold; margin-bottom: 10px; display: block;">⚽ Préstamo gratuito:</label>
+                <label style="color: #2ecc71; font-weight: bold; margin-bottom: 10px; display: block;">⚽ Préstamo de Implementos:</label>
                 <?php while($impl = mysqli_fetch_assoc($res_implementos)): 
-                    // --- LÓGICA DE MÁXIMOS POR TIPO ---
-                    $nombre = strtolower($impl['nombre_objeto']);
-                    $limite = $impl['cantidad_total']; // Por defecto el stock total
+                    $nombre_real = $impl['nombre_objeto'];
+                    $nombre_busqueda = strtolower($nombre_real);
+                    
+                    // LÓGICA DE MÁXIMOS
+                    $limite = $impl['cantidad_total']; 
 
-                    if (strpos($nombre, 'balon') !== false || strpos($nombre, 'balón') !== false) {
+                    if (strpos($nombre_busqueda, 'balon') !== false || strpos($nombre_busqueda, 'balón') !== false) {
                         $limite = 1;
-                    } elseif (strpos($nombre, 'peto') !== false) {
+                        $nombre_mostrar = "Balón de Fútbol"; // Forzamos el nombre a Balón
+                    } elseif (strpos($nombre_busqueda, 'peto') !== false) {
                         $limite = 2;
-                    } elseif (strpos($nombre, 'guante') !== false) {
+                        $nombre_mostrar = htmlspecialchars($nombre_real);
+                    } elseif (strpos($nombre_busqueda, 'guante') !== false) {
                         $limite = 2;
+                        $nombre_mostrar = htmlspecialchars($nombre_real);
+                    } else {
+                        $nombre_mostrar = htmlspecialchars($nombre_real);
                     }
 
-                    // El max real es el menor entre el stock y el límite por usuario
                     $max_final = min($limite, $impl['cantidad_total']);
                 ?>
                     <div class="impl-item">
                         <div class="impl-info">
-                            <strong><?php echo htmlspecialchars($impl['nombre_objeto']); ?></strong>
-                            <br><small style="color: #666;">Máx. permitido: <?php echo $max_final; ?></small>
+                            <strong><?php echo $nombre_mostrar; ?></strong>
+                            <br><small style="color: #666;">Máx: <?php echo $max_final; ?> unidad(es)</small>
                         </div>
                         <input type="number" name="cantidades[<?php echo $impl['id']; ?>]" 
                                class="impl-cant" min="0" max="<?php echo $max_final; ?>" value="0">
@@ -138,7 +144,6 @@ if (!$res_implementos) {
             const hoy = "<?php echo $hoy; ?>";
             const ahora = "<?php echo $ahora; ?>";
 
-            // Bloqueo de fecha y hora pasada
             if (fInput.value === hoy) {
                 hInicio.min = ahora;
             } else {
@@ -146,17 +151,16 @@ if (!$res_implementos) {
             }
             hFin.min = hInicio.value;
 
-            // --- NUEVA VALIDACIÓN: MÁXIMO 1 HORA Y 10 MINUTOS (70 MIN) ---
+            // VALIDACIÓN: MÁXIMO 1 HORA Y 10 MINUTOS
             if (hInicio.value && hFin.value) {
                 const inicio = new Date(`2026-01-01T${hInicio.value}`);
                 const fin = new Date(`2026-01-01T${hFin.value}`);
                 
-                const diferenciaMs = fin - inicio;
-                const diferenciaMin = Math.floor(diferenciaMs / 60000);
+                const diferenciaMin = Math.floor((fin - inicio) / 60000);
 
                 if (diferenciaMin > 70) {
                     alert("⚠️ El tiempo máximo por reserva es de 1 hora y 10 minutos.");
-                    hFin.value = ""; // Resetea la hora de fin para obligar a corregir
+                    hFin.value = ""; 
                 }
             }
         }
